@@ -32,9 +32,14 @@ public class V2Gdecoder {
 		Option exiform = new Option("e", "exi", false, "EXI format");
 		exiform.setRequired(false);
 		options.addOption(exiform);
-		Option webserv = new Option("w", "web", false, "Webserver");
+		Option webserv = new Option("w", "web", true, "Webserver");
 		webserv.setRequired(false);
 		options.addOption(webserv);
+
+		// NEW MODIFICATION
+		Option schema = new Option("c", "schema", true, "DIN/ISO XML schema");
+		schema.setRequired(true);
+		options.addOption(schema);
 		
 		CommandLineParser parser = new DefaultParser();
 		HelpFormatter formatter = new HelpFormatter();
@@ -60,19 +65,32 @@ public class V2Gdecoder {
 		/* Initialize grammars */
 		Grammars[] grammars = {null, null, null};
 
+		String SCHEMA_PATH = "";
+		if (cmd.getOptionValue("schema").equalsIgnoreCase("iso")) {
+			SCHEMA_PATH = "/schemas_15118";
+		} else if (cmd.getOptionValue("schema").equalsIgnoreCase("din")){
+			SCHEMA_PATH = "/schemas_din";
+		} else {
+			System.out.println("ERROR: Schema not supported");
+			System.exit(-1);
+		}
+
 		/* BOTTLENECK: slow operation */
 		try {
-			grammars[0] = GrammarFactory.newInstance().createGrammars("." + GlobalValues.SCHEMA_PATH_MSG_DEF.toString());
+			// grammars[0] = GrammarFactory.newInstance().createGrammars("." + GlobalValues.SCHEMA_PATH_MSG_DEF.toString());
+			grammars[0] = GrammarFactory.newInstance().createGrammars("." + SCHEMA_PATH + "/V2G_CI_MsgDef.xsd");
 		} catch (EXIException e) {
 			e.printStackTrace();			
 		}
 		try {
-			grammars[1] = GrammarFactory.newInstance().createGrammars("." + GlobalValues.SCHEMA_PATH_APP_PROTOCOL.toString());
+			// grammars[1] = GrammarFactory.newInstance().createGrammars("." + GlobalValues.SCHEMA_PATH_APP_PROTOCOL.toString());
+			grammars[1] = GrammarFactory.newInstance().createGrammars("." + SCHEMA_PATH + "/V2G_CI_AppProtocol.xsd");
 		} catch (EXIException e) {
 			e.printStackTrace();			
 		}
 		try {
-			grammars[2] = GrammarFactory.newInstance().createGrammars("." + GlobalValues.SCHEMA_PATH_XMLDSIG.toString());
+			// grammars[2] = GrammarFactory.newInstance().createGrammars("." + GlobalValues.SCHEMA_PATH_XMLDSIG.toString());
+			grammars[2] = GrammarFactory.newInstance().createGrammars("." + SCHEMA_PATH + "/xmldsig-core-schema.xsd");
 		} catch (EXIException e) {
 			e.printStackTrace();			
 		}
@@ -109,7 +127,9 @@ public class V2Gdecoder {
         		System.out.println(result);
         	}
         } else if (cmd.hasOption("web")) { // run a encoder/decoder service on port TCP 9000
-            MultiThreadedServer server = new MultiThreadedServer(9000, grammars);
+            String port = cmd.getOptionValue("web");
+            MultiThreadedServer server = new MultiThreadedServer(Integer.valueOf(port), grammars);
+            // System.out.println("Starting webserver on port: " + port);
             new Thread(server).start();
         }
 	}
