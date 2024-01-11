@@ -34,7 +34,11 @@ public class WorkerRunnable implements Runnable{
         int charRead;
         StringBuffer sb = new StringBuffer();
         while (true) {
-            sb.append((char) (charRead = inputStream.read()));
+            charRead = inputStream.read();
+            // Check for -1 because buffer would fill with these and overflow
+            // when opened with popen for some reason
+            if (charRead == -1) continue;
+            sb.append((char) charRead);
             if ((char) charRead == '\r') {          
                 sb.append((char) inputStream.read()); 
                 charRead = inputStream.read();       
@@ -83,10 +87,10 @@ public class WorkerRunnable implements Runnable{
             OutputStream output = clientSocket.getOutputStream();
             //long time = System.currentTimeMillis();
             Map<String, String> headers = parseHTTPHeaders(input);
-            System.out.println(headers);
+            // System.out.println(headers);
             String body = parseHTTPBody(input);
             String result = null;
-            System.out.println(headers.get("Format").toString());
+            // System.out.println(headers.get("Format").toString());
             
             if (headers.get("Format").contains("EXI"))
             {
